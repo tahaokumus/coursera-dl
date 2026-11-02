@@ -21,9 +21,15 @@ from xml.sax.saxutils import escape, unescape
 
 import six
 from six import iteritems
-from six.moves import html_parser
 from six.moves.urllib.parse import ParseResult
 from six.moves.urllib_parse import unquote_plus
+
+# HTMLParser.unescape was removed in Python 3.9
+try:
+    from html import unescape as html_unescape
+except ImportError:  # pragma: no cover
+    from six.moves import html_parser
+    html_unescape = html_parser.HTMLParser().unescape
 
 #  six.moves doesn’t support urlparse
 if six.PY3:  # pragma: no cover
@@ -98,8 +104,7 @@ HTML_UNESCAPE_TABLE = dict((v, k) for k, v in HTML_ESCAPE_TABLE.items())
 
 
 def unescape_html(s):
-    h = html_parser.HTMLParser()
-    s = h.unescape(s)
+    s = html_unescape(s)
     s = unquote_plus(s)
     return unescape(s, HTML_UNESCAPE_TABLE)
 
@@ -114,8 +119,7 @@ def clean_filename(s, minimal_change=False):
     """
 
     # First, deal with URL encoded strings
-    h = html_parser.HTMLParser()
-    s = h.unescape(s)
+    s = html_unescape(s)
     s = unquote_plus(s)
 
     # Strip forbidden characters

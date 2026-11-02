@@ -6,6 +6,7 @@ Test syllabus parsing.
 """
 
 import os.path
+import ssl
 import requests
 from six.moves import http_cookiejar as cookielib
 
@@ -108,3 +109,10 @@ def test_make_cookie_values():
     values = 'csrf_token=csrfclass001; session=sessionclass1'
     cookie_values = cookies.make_cookie_values(cj, 'class-001')
     assert cookie_values == values
+
+
+def test_tls_adapter_requires_tls_1_2():
+    adapter = cookies.TLSAdapter()
+
+    context = adapter.poolmanager.connection_pool_kw['ssl_context']
+    assert context.minimum_version == ssl.TLSVersion.TLSv1_2

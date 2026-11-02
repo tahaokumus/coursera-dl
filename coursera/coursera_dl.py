@@ -49,13 +49,6 @@ import re
 import time
 import shutil
 
-from distutils.version import LooseVersion as V
-
-
-# Test versions of some critical modules.
-# We may, perhaps, want to move these elsewhere.
-import bs4
-import six
 import requests
 
 from .cookies import (
@@ -78,14 +71,6 @@ from .extractors import CourseraExtractor
 from coursera import __version__
 
 
-# URL containing information about outdated modules
-_SEE_URL = " See https://github.com/coursera-dl/coursera/issues/139"
-
-assert V(requests.__version__) >= V('2.4'), "Upgrade requests!" + _SEE_URL
-assert V(six.__version__) >= V('1.5'), "Upgrade six!" + _SEE_URL
-assert V(bs4.__version__) >= V('4.1'), "Upgrade bs4!" + _SEE_URL
-
-
 def get_session():
     """
     Create a session with TLS v1.2 certificate.
@@ -105,7 +90,10 @@ def list_courses(args):
     @type args: namedtuple
     """
     session = get_session()
-    login(session, args.username, args.password)
+    if args.cookies_cauth:
+        session.cookies.set('CAUTH', args.cookies_cauth)
+    else:
+        login(session, args.username, args.password)
     extractor = CourseraExtractor(session)
     courses = extractor.list_courses()
     logging.info('Found %d courses', len(courses))

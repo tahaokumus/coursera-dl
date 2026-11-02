@@ -14,6 +14,7 @@ from mock import patch, Mock, mock_open
 
 from coursera import coursera_dl
 from coursera import api
+from coursera import extractors
 from coursera.define import IN_MEMORY_EXTENSION, IN_MEMORY_MARKER
 
 
@@ -147,3 +148,38 @@ def test_get_on_demand_supplement_url_accumulates_assets(mocked):
     # This is the easiest way to convert nested tuples to lists
     output = json.loads(json.dumps(output))
     assert expected_output == output
+
+
+def test_list_courses_uses_cauth_cookie_without_login(monkeypatch):
+    login = Mock()
+    monkeypatch.setattr(coursera_dl, 'login', login)
+    extractor = Mock()
+    extractor.return_value.list_courses.return_value = ['course']
+    monkeypatch.setattr(coursera_dl, 'CourseraExtractor', extractor)
+    args = Mock(cookies_cauth='cauth-value', username=None, password=None)
+
+    coursera_dl.list_courses(args)
+
+    login.assert_not_called()
+    session = extractor.call_args[0][0]
+    assert session.cookies.get('CAUTH') == 'cauth-value'
+
+
+def test_parse_on_demand_syllabus_makes_no_extra_requests(monkeypatch):
+    # onDemandCourseMaterials.v1 was removed ("API Route Does Not Exist")
+    monkeypatch.setattr(api, 'get_page',
+                        Mock(side_effect=AssertionError('unexpected request')))
+    monkeypatch.setattr(api.CourseraOnDemand, 'obtain_user_id', Mock())
+    monkeypatch.setattr(api.CourseraOnDemand, 'extract_references_poll',
+                        Mock(return_value=[]))
+    page = json.dumps({
+        'elements': [{'id': 'course-id'}],
+        'linked': {
+            'onDemandCourseMaterialModules.v1': [],
+            'onDemandCourseMaterialLessons.v1': [],
+            'onDemandCourseMaterialItems.v2': [],
+        }})
+
+    extractor = extractors.CourseraExtractor(session=None)
+
+    assert extractor._parse_on_demand_syllabus('course', page) == (False, [])

@@ -13,8 +13,10 @@ from requests.adapters import HTTPAdapter
 
 try:  # Workaround for broken Debian/Ubuntu packages? (See issue #331)
     from requests.packages.urllib3.poolmanager import PoolManager
+    from requests.packages.urllib3.util.ssl_ import create_urllib3_context
 except ImportError:
     from urllib3.poolmanager import PoolManager
+    from urllib3.util.ssl_ import create_urllib3_context
 
 
 from six.moves import StringIO
@@ -288,7 +290,7 @@ def load_cookies_file(cookies_file):
 
     cookies = StringIO()
     cookies.write('# Netscape HTTP Cookie File')
-    cookies.write(open(cookies_file, 'rU').read())
+    cookies.write(open(cookies_file, 'r').read())
     cookies.flush()
     cookies.seek(0)
     return cookies
@@ -379,7 +381,10 @@ class TLSAdapter(HTTPAdapter):
     """
 
     def init_poolmanager(self, connections, maxsize, block=False):
+        # ssl.PROTOCOL_TLSv1_2 was removed in Python 3.15
+        context = create_urllib3_context()
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
         self.poolmanager = PoolManager(num_pools=connections,
                                        maxsize=maxsize,
                                        block=block,
-                                       ssl_version=ssl.PROTOCOL_TLSv1_2)
+                                       ssl_context=context)

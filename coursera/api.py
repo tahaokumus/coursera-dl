@@ -27,7 +27,6 @@ from .define import (OPENCOURSE_SUPPLEMENT_URL,
                      OPENCOURSE_ASSET_URL,
                      OPENCOURSE_ASSETS_URL,
                      OPENCOURSE_API_ASSETS_V1_URL,
-                     OPENCOURSE_ONDEMAND_COURSE_MATERIALS,
                      OPENCOURSE_ONDEMAND_COURSE_MATERIALS_V2,
                      OPENCOURSE_ONDEMAND_COURSES_V1,
                      OPENCOURSE_ONDEMAND_LECTURE_VIDEOS_URL,
@@ -282,75 +281,6 @@ class MarkupToHTMLConverter(object):
 
                 controls_tag.append(source_tag)
                 audio.insert_after(controls_tag)
-
-
-class OnDemandCourseMaterialItemsV1(object):
-    """
-    Helper class that allows accessing lecture JSONs by lesson IDs.
-    """
-
-    def __init__(self, items):
-        """
-        Initialization. Build a map from lessonId to Lecture (item)
-
-        @param items: linked.OnDemandCourseMaterialItems key of
-            OPENCOURSE_ONDEMAND_COURSE_MATERIALS response.
-        @type items: dict
-        """
-        # Build a map of lessonId => Item
-        self._items = dict((item['lessonId'], item) for item in items)
-
-    @staticmethod
-    def create(session, course_name):
-        """
-        Create an instance using a session and a course_name.
-
-        @param session: Requests session.
-        @type session: requests.Session
-
-        @param course_name: Course name (slug) from course json.
-        @type course_name: str
-
-        @return: Instance of OnDemandCourseMaterialItems
-        @rtype: OnDemandCourseMaterialItems
-        """
-
-        dom = get_page(session, OPENCOURSE_ONDEMAND_COURSE_MATERIALS,
-                       json=True,
-                       class_name=course_name)
-        return OnDemandCourseMaterialItemsV1(
-            dom['linked']['onDemandCourseMaterialItems.v1'])
-
-    def get(self, lesson_id):
-        """
-        Return lecture by lesson ID.
-
-        @param lesson_id: Lesson ID.
-        @type lesson_id: str
-
-        @return: Lesson JSON.
-        @rtype: dict
-        Example:
-        {
-          "id": "AUd0k",
-          "moduleId": "0MGvs",
-          "lessonId": "QgCuM",
-          "name": "Programming Assignment 1: Decomposition of Graphs",
-          "slug": "programming-assignment-1-decomposition-of-graphs",
-          "timeCommitment": 10800000,
-          "content": {
-            "typeName": "gradedProgramming",
-            "definition": {
-              "programmingAssignmentId": "zHzR5yhHEeaE0BKOcl4zJQ@2",
-              "gradingWeight": 20
-            }
-          },
-          "isLocked": true,
-          "itemLockedReasonCode": "PREMIUM",
-          "trackId": "core"
-        },
-        """
-        return self._items.get(lesson_id)
 
 
 class Asset(namedtuple('Asset', 'id name type_name url content_type data')):
@@ -945,7 +875,7 @@ class CourseraOnDemand(object):
 
         def _add_asset(name, url, destination):
             filename, extension = os.path.splitext(clean_url(name))
-            if extension is '':
+            if extension == '':
                 return
 
             extension = clean_filename(
@@ -1590,7 +1520,7 @@ class CourseraOnDemand(object):
             filename, extension = os.path.splitext(clean_url(link))
             # Some courses put links to sites in supplement section, e.g.:
             # http://pandas.pydata.org/
-            if extension is '':
+            if extension == '':
                 continue
 
             # Make lowercase and cut the leading/trailing dot

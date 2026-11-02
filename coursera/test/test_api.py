@@ -3,6 +3,7 @@ Test APIs.
 """
 from os.path import expanduser
 import json
+import re
 
 import pytest
 from mock import patch, Mock
@@ -401,7 +402,12 @@ def test_quiz_exam_to_markup_converter(input_filename, output_filename):
     actual_output = converter(quiz_json).strip()
     # print('>%s<' % expected_output)
     # print('>%s<' % actual_output)
-    assert actual_output == expected_output
+
+    # Newer BeautifulSoup versions put a newline between some tags
+    def squash(html):
+        return re.sub(r'>\s+<', '><', html)
+
+    assert squash(actual_output) == squash(expected_output)
 
 
 class TestMarkupToHTMLConverter:

@@ -9,8 +9,7 @@ import abc
 import json
 import logging
 
-from .api import (CourseraOnDemand, OnDemandCourseMaterialItemsV1,
-                  ModulesV1, LessonsV1, ItemsV2)
+from .api import CourseraOnDemand, ModulesV1, LessonsV1, ItemsV2
 from .define import OPENCOURSE_ONDEMAND_COURSE_MATERIALS_V2
 from .network import get_page
 from .utils import is_debug_run, spit_json
@@ -102,14 +101,10 @@ class CourseraExtractor(PlatformExtractor):
             unrestricted_filenames=unrestricted_filenames,
             mathjax_cdn_url=mathjax_cdn_url)
         course.obtain_user_id()
-        ondemand_material_items = OnDemandCourseMaterialItemsV1.create(
-            session=self._session, course_name=course_name)
 
         if is_debug_run():
             spit_json(dom, '%s-syllabus-raw.json' % course_name)
             spit_json(json_modules, '%s-material-items-v2.json' % course_name)
-            spit_json(ondemand_material_items._items,
-                      '%s-course-material-items.json' % course_name)
 
         error_occurred = False
 
@@ -127,14 +122,6 @@ class CourseraExtractor(PlatformExtractor):
                 logging.info('Processing section     %s', section.slug)
                 lectures = []
                 available_lectures = section.children(all_items)
-
-                # Certain modules may be empty-looking programming assignments
-                # e.g. in data-structures, algorithms-on-graphs ondemand
-                # courses
-                if not available_lectures:
-                    lecture = ondemand_material_items.get(section.id)
-                    if lecture is not None:
-                        available_lectures = [lecture]
 
                 for lecture in available_lectures:
                     typename = lecture.type_name
